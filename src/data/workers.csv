@@ -1,0 +1,11 @@
+id,name,role,skills,availability
+W001,John Smith,Technician,"[""Mechanical"", ""Electrical""]",Available
+W002,Jane Doe,Senior Technician,"[""Mechanical"", ""Hydraulic"", ""Pneumatic""]",Available
+W003,Robert Johnson,Technician,"[""Electrical"", ""Electronics""]",Available
+W004,Emily Williams,Technician,"[""HVAC"", ""Plumbing""]",Available
+W005,Michael Brown,Senior Technician,"[""Electrical"", ""Safety"", ""Compliance""]",Available
+W006,Sarah Davis,Technician,"[""Hydraulic"", ""Mechanical""]",Available
+W007,David Miller,Apprentice,"[""Mechanical"", ""General Maintenance""]",Available
+W008,Lisa Wilson,Technician,"[""HVAC"", ""Ventilation""]",Available
+W009,James Taylor,Senior Technician,"[""Electrical"", ""Safety"", ""Inspection""]",Available
+W010,Joe Technician,Technician,"[""Mechanical"", ""Calibration"", ""Precision Equipment""]",Available 

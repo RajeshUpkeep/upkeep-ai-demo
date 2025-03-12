@@ -1,0 +1,11 @@
+id,title,description,location,status,dueDate,assignedWorkers,priority,createdAt
+WO001,Fix the spindle drive on the CNC machine,The spindle drive on the CNC machine is making unusual noises and needs to be fixed,Anaheim Production,Overdue,2023-02-15,"[""W001""]",High,2023-01-15
+WO002,Check bearings on line 6 agitator,Regular inspection of bearings on line 6 agitator,Anaheim Production,Overdue,2023-02-20,"[""W001""]",Medium,2023-01-20
+WO003,Inspect line 9 washer,The line 9 washer needs inspection due to reduced efficiency,Anaheim Production,Overdue,2023-02-25,"[""W001""]",Medium,2023-01-25
+WO004,Replace conveyor belt on line 3,The conveyor belt on line 3 is showing signs of wear and needs replacement,San Diego Plant,In Progress,2023-03-10,"[""W002"", ""W003""]",Medium,2023-02-10
+WO005,Calibrate temperature sensors,All temperature sensors need calibration for accuracy,San Diego Plant,Completed,2023-02-05,"[""W004"", ""W005""]",Low,2023-01-05
+WO006,Repair hydraulic press,The hydraulic press is leaking fluid and needs repair,Los Angeles Facility,Scheduled,2023-03-15,"[""W002"", ""W006""]",High,2023-02-15
+WO007,Lubricate chain drive on packaging line,Regular maintenance of chain drive on packaging line,Los Angeles Facility,In Progress,2023-03-05,"[""W003"", ""W007""]",Low,2023-02-05
+WO008,Replace air filters in HVAC system,The air filters in the HVAC system need replacement,Anaheim Production,Scheduled,2023-03-20,"[""W004"", ""W008""]",Medium,2023-02-20
+WO009,Inspect electrical panels,Regular inspection of all electrical panels for safety compliance,San Diego Plant,Scheduled,2023-03-25,"[""W005"", ""W009""]",High,2023-02-25
+WO010,Calibrate weighing scales,All weighing scales need calibration for accuracy,Los Angeles Facility,Completed,2023-02-10,"[""W006"", ""W010""]",Medium,2023-01-10 
