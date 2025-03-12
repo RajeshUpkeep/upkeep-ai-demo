@@ -18,14 +18,21 @@ interface WorkOrder {
   createdAt: string;
 }
 
+interface WorkerAssignment {
+  workerId: string;
+  workOrderId: string;
+  resource?: string;
+}
+
 interface Insight {
   id: number;
   issue: string;
   rootCause?: string;
   suggestedAction?: string;
   affectedItemsCount?: number;
+  successMessage?: string;
   filterFunction?: () => void;
-  executeAction?: () => void;
+  executeAction?: (changes?: WorkerAssignment[]) => void;
 }
 
 export default function Home() {
@@ -39,6 +46,7 @@ export default function Home() {
   const [idFilter, setIdFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [locationFilter, setLocationFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
   const [isFiltered, setIsFiltered] = useState(false);
 
   // State for AI analysis
@@ -87,7 +95,7 @@ export default function Home() {
   // Apply filters when filter states change
   useEffect(() => {
     applyFilters();
-  }, [idFilter, statusFilter, locationFilter, workOrders]);
+  }, [idFilter, statusFilter, locationFilter, priorityFilter, workOrders]);
 
   // Apply filters to work orders
   const applyFilters = () => {
@@ -111,9 +119,18 @@ export default function Home() {
       );
     }
 
+    if (priorityFilter) {
+      filtered = filtered.filter(
+        (wo) => wo.priority.toLowerCase() === priorityFilter.toLowerCase()
+      );
+    }
+
     setFilteredWorkOrders(filtered);
     setIsFiltered(
-      idFilter !== "" || statusFilter !== "" || locationFilter !== ""
+      idFilter !== "" ||
+        statusFilter !== "" ||
+        locationFilter !== "" ||
+        priorityFilter !== ""
     );
   };
 
@@ -122,6 +139,7 @@ export default function Home() {
     setIdFilter("");
     setStatusFilter("");
     setLocationFilter("");
+    setPriorityFilter("");
     setFilteredWorkOrders(workOrders);
     setIsFiltered(false);
   };
@@ -129,18 +147,12 @@ export default function Home() {
   // Filter by overdue work orders at Anaheim
   const filterOverdueWorkOrders = () => {
     setStatusFilter("overdue");
-    setLocationFilter("anaheim production");
     // The useEffect will apply the filters
   };
 
   // Filter by high priority work orders
   const filterHighPriorityWorkOrders = () => {
-    clearFilters();
-    const filtered = workOrders.filter(
-      (wo) => wo.priority.toLowerCase() === "high"
-    );
-    setFilteredWorkOrders(filtered);
-    setIsFiltered(true);
+    setPriorityFilter("high");
   };
 
   // Filter by San Diego Plant work orders
@@ -188,7 +200,7 @@ export default function Home() {
       const allInsights: Insight[] = [
         {
           id: 1,
-          issue: `I noticed you have ${overdueIds.length} overdue work orders at the Anaheim Production location.`,
+          issue: `I noticed you have ${overdueIds.length} overdue work orders`,
           // rootCause:
           //   "It appears to be due to the fact that most work orders have 2 workers assigned to them, but these three at Anaheim Production only have one worker assigned.",
           // suggestedAction:
@@ -200,10 +212,10 @@ export default function Home() {
         {
           id: 2,
           issue: `There are ${highPriorityIds.length} high priority work orders that require immediate attention.`,
-          rootCause:
-            "These work orders are critical for production equipment at San Diego Plant and Los Angeles Facility. Delays could impact production schedules.",
-          suggestedAction:
-            "Would you like me to notify Maria Rodriguez (W002) and David Johnson (W003) about these high priority tasks? They are the supervisors for these locations.",
+          // rootCause:
+          //   "These work orders are critical for production equipment at San Diego Plant and Los Angeles Facility. Delays could impact production schedules.",
+          // suggestedAction:
+          //   "Would you like me to notify Maria Rodriguez (W002) and David Johnson (W003) about these high priority tasks? They are the supervisors for these locations.",
           affectedItemsCount: highPriorityIds.length,
           filterFunction: filterHighPriorityWorkOrders,
           executeAction: executeHighPriorityAction,
@@ -255,7 +267,7 @@ export default function Home() {
   };
 
   // Handle action execution for overdue work orders
-  const executeOverdueAction = async () => {
+  const executeOverdueAction = async (changes?: WorkerAssignment[]) => {
     try {
       setAiLoading(true);
 
@@ -263,26 +275,40 @@ export default function Home() {
       setTimeout(() => {
         setAiLoading(false);
 
-        // Update work orders with new worker
+        if (!changes || changes.length === 0) {
+          console.log("No changes to apply");
+          return;
+        }
+
+        // Create a new array of updated work orders
         const updatedWorkOrders = workOrders.map((wo) => {
-          if (wo.status === "Overdue") {
+          // Check if this work order needs to be updated
+          const change = changes.find((c) => c.workOrderId === wo.id);
+
+          if (change) {
+            // Create a new work order object with the worker added
             return {
               ...wo,
-              assignedWorkers: [...wo.assignedWorkers, "W010"],
+              assignedWorkers: [...wo.assignedWorkers, change.workerId],
             };
           }
+
+          // Return the original work order if no changes needed
           return wo;
         });
 
+        // Update both the main work orders and filtered work orders
         setWorkOrders(updatedWorkOrders);
 
-        // If filters are applied, update filtered work orders too
+        // Apply current filters to the updated work orders
         if (isFiltered) {
           applyFilters();
         } else {
           setFilteredWorkOrders(updatedWorkOrders);
         }
-      }, 2000);
+
+        console.log("Work orders updated with new worker assignments");
+      }, 1000);
     } catch (err) {
       console.error("Error executing action:", err);
       setAiLoading(false);
@@ -411,6 +437,13 @@ export default function Home() {
     setLocationFilter(e.target.value);
   };
 
+  // Handle priority filter change
+  const handlePriorityFilterChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    setPriorityFilter(e.target.value);
+  };
+
   // Handle skip to next insight
   const handleSkipInsight = () => {
     if (currentInsightIndex < insights.length - 1) {
@@ -425,41 +458,106 @@ export default function Home() {
   const currentInsight = insights[currentInsightIndex];
 
   const fetchRootCauseAndAction = async () => {
-    const rootCauses = await fetch("/api/ai/rootCause", {
-      method: "POST",
-      body: JSON.stringify({
-        workOrders: filteredWorkOrders.filter((wo) => wo.status === "Overdue"),
-        issue: "overdue",
-      }),
-    });
-    const rootCausesData = await rootCauses.json();
+    setAiLoading(true);
+    try {
+      let issue = "";
+      let workOrders: WorkOrder[] = [];
 
-    const actions = await fetch("/api/ai/suggestActions", {
-      method: "POST",
-      body: JSON.stringify({
-        workOrders: filteredWorkOrders.filter((wo) => wo.status === "Overdue"),
-        issue: "overdue",
-        rootCause: rootCausesData?.root_cause,
-      }),
-    });
-    const actionsData = await actions.json();
+      console.log(currentInsight?.id);
 
-    console.log(actionsData);
-
-    const newInsights = insights.map((insight, index) => {
-      if (index === 0) {
-        return {
-          ...insight,
-          rootCause: rootCausesData?.explanation,
-          suggestedAction: actionsData?.explanation,
-        };
+      switch (currentInsight.id) {
+        case 1: {
+          issue = "overdue";
+          workOrders = filteredWorkOrders.filter(
+            (wo) => wo.status === "Overdue"
+          );
+          break;
+        }
+        case 2: {
+          issue = "high priority";
+          workOrders = filteredWorkOrders.filter(
+            (wo) => wo.priority === "High"
+          );
+          console.log("are you here?");
+          break;
+        }
+        case 3: {
+          issue = "skill gap";
+          workOrders = filteredWorkOrders.filter(
+            (wo) =>
+              wo.location === "San Diego Plant" &&
+              wo.status === "In Progress" &&
+              wo.assignedWorkers.length < 2
+          );
+          break;
+        }
+        default: {
+          break;
+        }
       }
-      return insight;
-    });
 
-    console.log(newInsights);
+      if (!workOrders.length) {
+        return;
+      }
 
-    setInsights(newInsights);
+      const rootCauses = await fetch("/api/ai/rootCause", {
+        method: "POST",
+        body: JSON.stringify({
+          workOrders,
+          issue,
+        }),
+      });
+      const rootCausesData = await rootCauses.json();
+
+      const actions = await fetch("/api/ai/suggestActions", {
+        method: "POST",
+        body: JSON.stringify({
+          workOrders,
+          issue,
+          rootCause: rootCausesData?.rootCause,
+        }),
+      });
+      const actionsData = await actions.json();
+
+      // Only update if we have valid data
+      if (rootCausesData?.explanation || actionsData?.explanation) {
+        const newInsights = insights.map((insight, index) => {
+          if (index === 0) {
+            return {
+              ...insight,
+              rootCause: rootCausesData?.explanation || insight.rootCause,
+              suggestedAction:
+                actionsData?.explanation || insight.suggestedAction,
+              filterFunction: filterOverdueWorkOrders,
+              executeAction: actionsData?.changes
+                ? () => executeOverdueAction(actionsData.changes)
+                : insight.executeAction,
+              successMessage:
+                actionsData?.successMessage || insight.successMessage,
+            };
+          }
+          return insight;
+        });
+
+        // Only update state if something actually changed
+        const currentInsight = insights[0] || {};
+        const newInsight = newInsights[0] || {};
+
+        const hasChanged =
+          currentInsight.rootCause !== newInsight.rootCause ||
+          currentInsight.suggestedAction !== newInsight.suggestedAction ||
+          currentInsight.successMessage !== newInsight.successMessage;
+
+        if (hasChanged) {
+          console.log("Updating insights with new data");
+          setInsights(newInsights);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching root cause and actions:", error);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   return (
@@ -493,6 +591,7 @@ export default function Home() {
                 insightNumber={currentInsightIndex + 1}
                 totalInsights={insights.length}
                 onWhyClick={fetchRootCauseAndAction}
+                successMessage={currentInsight.successMessage}
               />
             )}
           </div>
@@ -585,6 +684,34 @@ export default function Home() {
                         className="text-gray-800"
                       >
                         Los Angeles Facility
+                      </option>
+                    </select>
+                  </div>
+
+                  <div className="flex-1 min-w-[200px]">
+                    <label
+                      htmlFor="priority-filter"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Priority
+                    </label>
+                    <select
+                      id="priority-filter"
+                      value={priorityFilter}
+                      onChange={handlePriorityFilterChange}
+                      className="w-full border rounded-md px-3 py-2 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 appearance-none bg-white bg-no-repeat bg-[position:right_12px_center] bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22M6%208l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')] bg-[size:20px_20px]"
+                    >
+                      <option value="" className="text-gray-800">
+                        All Priorities
+                      </option>
+                      <option value="high" className="text-gray-800">
+                        High
+                      </option>
+                      <option value="medium" className="text-gray-800">
+                        Medium
+                      </option>
+                      <option value="low" className="text-gray-800">
+                        Low
                       </option>
                     </select>
                   </div>

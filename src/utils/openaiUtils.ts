@@ -65,10 +65,12 @@ export async function identifyRootCause(
     const { object } = await generateObject({
       model: openai("gpt-4o"),
       schema: z.object({
-        root_cause: z.enum([
+        rootCause: z.enum([
           "worker_assignment",
           "scheduling",
           "resource_allocation",
+          "skill_gap",
+          "high_priority",
         ]),
         explanation: z.string(),
       }),
@@ -79,7 +81,7 @@ export async function identifyRootCause(
       Workers: ${JSON.stringify(workers)}
       Identified Issue: ${issue}
 
-      Analyze the data and identify the root cause of the issue. Focus on patterns like worker assignments, scheduling, or resource allocation.`,
+      Analyze the data and identify the root cause of the issue. Focus on patterns like worker assignments, scheduling, notifying supervisors, resource allocation, skill gaps, high priority work orders .`,
       temperature: 0.2,
     });
 
@@ -107,26 +109,27 @@ export async function suggestActions(
   try {
     const { object } = await generateObject({
       model: openai("gpt-4o"),
-      output: "object",
       schema: z.object({
         explanation: z.string(),
+        rootCause: z.enum([
+          "worker_assignment",
+          "scheduling",
+          "resource_allocation",
+          "skill_gap",
+          "high_priority",
+        ]),
+        suggestedAction: z.enum([
+          "assign_worker",
+          "reschedule_work_order",
+          "reallocate_resources",
+          "notify_supervisor",
+        ]),
+        successMessage: z.string(),
         changes: z.array(
           z.object({
-            root_cause: z.enum([
-              "worker_assignment",
-              "scheduling",
-              "resource_allocation",
-            ]),
-            suggestActions: z.enum([
-              "assign_worker",
-              "reschedule_work_order",
-              "reallocate_resources",
-            ]),
-            params: z.object({
-              worker: z.string(),
-              workOrder: z.string(),
-              resource: z.string(),
-            }),
+            workerId: z.string(),
+            workOrderId: z.string(),
+            resource: z.string(),
           })
         ),
       }),
@@ -139,7 +142,8 @@ export async function suggestActions(
       Root Cause: ${rootCause}
 
       Suggest specific actions to resolve the issue. Be specific about which work orders need attention and which workers could be assigned.
-      Also, provide an explanation of changes that need to be made to the system to resolve the issue.`,
+      Also, provide an explanation of changes that need to be made to the system to resolve the issue.
+      And in the successMessage, provide a message that will be shown to the user after the actions are executed.`,
       temperature: 0.2,
     });
 

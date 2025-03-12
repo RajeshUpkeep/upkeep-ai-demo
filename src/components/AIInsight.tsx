@@ -13,6 +13,7 @@ interface AIInsightProps {
   insightNumber?: number;
   totalInsights?: number;
   onWhyClick?: () => void;
+  successMessage?: string;
 }
 
 const AIInsight: React.FC<AIInsightProps> = ({
@@ -27,6 +28,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
   insightNumber = 1,
   totalInsights = 1,
   onWhyClick,
+  successMessage,
 }) => {
   // State to track if cause is shown
   const [showCause, setShowCause] = useState(false);
@@ -50,12 +52,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
   const handleWhyClick = () => {
     onWhyClick?.();
     setShowCause(true);
-    // After showing cause, automatically show action after a delay
-    if (suggestedAction) {
-      setTimeout(() => {
-        setShowAction(true);
-      }, 1000);
-    }
+    setShowAction(true);
   };
 
   // Handle Apply Fix button click
@@ -283,9 +280,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
                   <p className="font-medium">Action completed successfully!</p>
                 </div>
                 <p className="mt-1 text-sm">
-                  {parseTextWithLinks(
-                    "Joe Technician (W010) has been assigned to the overdue work orders at Anaheim Production. The work orders have been updated."
-                  )}
+                  {parseTextWithLinks(successMessage || "")}
                 </p>
                 {onViewAffectedItems && (
                   <button
