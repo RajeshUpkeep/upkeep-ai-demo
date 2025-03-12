@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import Link from 'next/link';
+import React, { useState } from "react";
+import Link from "next/link";
 
 interface AIInsightProps {
   issue: string;
@@ -33,12 +33,12 @@ const AIInsight: React.FC<AIInsightProps> = ({
   // State to track if action is completed
   const [actionCompleted, setActionCompleted] = useState(false);
   // Animation for the AI thinking effect
-  const [dots, setDots] = useState('');
+  const [dots, setDots] = useState("");
 
   React.useEffect(() => {
     if (loading) {
       const interval = setInterval(() => {
-        setDots(prev => (prev.length >= 3 ? '' : prev + '.'));
+        setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
       }, 500);
       return () => clearInterval(interval);
     }
@@ -86,15 +86,16 @@ const AIInsight: React.FC<AIInsightProps> = ({
 
     // Regular expressions to match worker IDs and location names
     const workerRegex = /\b(W\d{3})\b/g; // Matches worker IDs like W001, W010, etc.
-    const locationRegex = /(Anaheim Production|San Diego Plant|Los Angeles Facility)/g;
-    
+    const locationRegex =
+      /(Anaheim Production|San Diego Plant|Los Angeles Facility)/g;
+
     // Split the text by worker IDs and location names
     const parts = [];
     let lastIndex = 0;
-    
+
     // First, find all matches and their positions
     const matches = [];
-    
+
     // Find worker ID matches
     let workerMatch;
     while ((workerMatch = workerRegex.exec(text)) !== null) {
@@ -102,10 +103,10 @@ const AIInsight: React.FC<AIInsightProps> = ({
         start: workerMatch.index,
         end: workerMatch.index + workerMatch[0].length,
         text: workerMatch[0],
-        type: 'worker'
+        type: "worker",
       });
     }
-    
+
     // Find location matches
     let locationMatch;
     while ((locationMatch = locationRegex.exec(text)) !== null) {
@@ -113,24 +114,24 @@ const AIInsight: React.FC<AIInsightProps> = ({
         start: locationMatch.index,
         end: locationMatch.index + locationMatch[0].length,
         text: locationMatch[0],
-        type: 'location'
+        type: "location",
       });
     }
-    
+
     // Sort matches by their starting position
     matches.sort((a, b) => a.start - b.start);
-    
+
     // Build the result with links
     for (const match of matches) {
       // Add text before the match
       if (match.start > lastIndex) {
         parts.push(text.substring(lastIndex, match.start));
       }
-      
+
       // Add the link based on match type
-      if (match.type === 'worker') {
+      if (match.type === "worker") {
         parts.push(
-          <Link 
+          <Link
             key={`worker-${match.start}`}
             href={`/workers?name=${match.text}`}
             target="_blank"
@@ -139,11 +140,13 @@ const AIInsight: React.FC<AIInsightProps> = ({
             {match.text}
           </Link>
         );
-      } else if (match.type === 'location') {
+      } else if (match.type === "location") {
         parts.push(
-          <Link 
+          <Link
             key={`location-${match.start}`}
-            href={`/locations?name=${encodeURIComponent(match.text.toLowerCase())}`}
+            href={`/locations?name=${encodeURIComponent(
+              match.text.toLowerCase()
+            )}`}
             target="_blank"
             className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
           >
@@ -151,15 +154,15 @@ const AIInsight: React.FC<AIInsightProps> = ({
           </Link>
         );
       }
-      
+
       lastIndex = match.end;
     }
-    
+
     // Add any remaining text
     if (lastIndex < text.length) {
       parts.push(text.substring(lastIndex));
     }
-    
+
     return parts;
   };
 
@@ -171,8 +174,12 @@ const AIInsight: React.FC<AIInsightProps> = ({
             AI
           </div>
           <div>
-            <h3 className="font-medium text-lg">UpKeep AI Assistant</h3>
-            <p className="text-xs text-gray-500">Analyzing your maintenance data</p>
+            <h3 className="font-medium text-lg text-gray-800">
+              UpKeep AI Assistant
+            </h3>
+            <p className="text-xs text-gray-500">
+              Analyzing your maintenance data
+            </p>
           </div>
         </div>
         <div className="flex items-center">
@@ -199,7 +206,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
             <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm mr-2">
               1
             </div>
-            <h4 className="font-medium">Issue Identified</h4>
+            <h4 className="font-medium text-gray-800">Issue Identified</h4>
           </div>
           {rootCause && !showCause && (
             <button
@@ -214,7 +221,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
           <p className="text-gray-700">
             {parseTextWithLinks(issue)}
             {affectedItemsCount > 0 && onViewAffectedItems && (
-              <button 
+              <button
                 onClick={handleViewAffectedItems}
                 className="ml-2 text-blue-600 hover:text-blue-800 hover:underline font-medium"
               >
@@ -232,7 +239,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
             <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm mr-2">
               2
             </div>
-            <h4 className="font-medium">Root Cause</h4>
+            <h4 className="font-medium text-gray-800">Root Cause</h4>
           </div>
           <div className="pl-8">
             {loading ? (
@@ -251,7 +258,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
             <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm mr-2">
               3
             </div>
-            <h4 className="font-medium">Suggested Action</h4>
+            <h4 className="font-medium text-gray-800">Suggested Action</h4>
           </div>
           <div className="pl-8">
             {loading ? (
@@ -259,16 +266,26 @@ const AIInsight: React.FC<AIInsightProps> = ({
             ) : actionCompleted ? (
               <div className="bg-green-100 text-green-800 p-3 rounded-md animate-fadeIn">
                 <div className="flex items-center">
-                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   <p className="font-medium">Action completed successfully!</p>
                 </div>
                 <p className="mt-1 text-sm">
-                  {parseTextWithLinks("Joe Technician (W010) has been assigned to the overdue work orders at Anaheim Production. The work orders have been updated.")}
+                  {parseTextWithLinks(
+                    "Joe Technician (W010) has been assigned to the overdue work orders at Anaheim Production. The work orders have been updated."
+                  )}
                 </p>
                 {onViewAffectedItems && (
-                  <button 
+                  <button
                     onClick={handleViewAffectedItems}
                     className="mt-2 text-green-800 hover:text-green-900 hover:underline font-medium text-sm"
                   >
@@ -276,7 +293,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
                   </button>
                 )}
                 {onSkip && (
-                  <button 
+                  <button
                     onClick={handleSkip}
                     className="mt-2 ml-3 text-green-800 hover:text-green-900 hover:underline font-medium text-sm"
                   >
@@ -286,7 +303,9 @@ const AIInsight: React.FC<AIInsightProps> = ({
               </div>
             ) : (
               <>
-                <p className="text-gray-700 mb-3">{parseTextWithLinks(suggestedAction)}</p>
+                <p className="text-gray-700 mb-3">
+                  {parseTextWithLinks(suggestedAction)}
+                </p>
                 <div className="flex space-x-3">
                   <button
                     onClick={handleApplyFix}
@@ -295,7 +314,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
                     Apply Fix
                   </button>
                   {onViewAffectedItems && (
-                    <button 
+                    <button
                       onClick={handleViewAffectedItems}
                       className="bg-gray-100 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
                     >
@@ -323,4 +342,4 @@ const AIInsight: React.FC<AIInsightProps> = ({
   );
 };
 
-export default AIInsight; 
+export default AIInsight;
