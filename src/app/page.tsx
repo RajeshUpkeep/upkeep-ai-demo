@@ -21,11 +21,11 @@ interface WorkOrder {
 interface Insight {
   id: number;
   issue: string;
-  rootCause: string;
-  suggestedAction: string;
-  affectedItemsCount: number;
-  filterFunction: () => void;
-  executeAction: () => void;
+  rootCause?: string;
+  suggestedAction?: string;
+  affectedItemsCount?: number;
+  filterFunction?: () => void;
+  executeAction?: () => void;
 }
 
 export default function Home() {
@@ -72,10 +72,7 @@ export default function Home() {
         setWorkOrders(data);
         setFilteredWorkOrders(data);
 
-        // Simulate AI analysis starting
-        setTimeout(() => {
-          analyzeWorkOrders(data);
-        }, 1500);
+        analyzeWorkOrders(data);
       } catch (err) {
         setError("Error fetching work orders");
         console.error(err);
@@ -192,10 +189,10 @@ export default function Home() {
         {
           id: 1,
           issue: `I noticed you have ${overdueIds.length} overdue work orders at the Anaheim Production location.`,
-          rootCause:
-            "It appears to be due to the fact that most work orders have 2 workers assigned to them, but these three at Anaheim Production only have one worker assigned.",
-          suggestedAction:
-            "Would you like me to assign Joe Technician (W010) to these work orders? He has the right skills for these tasks and is currently available at Anaheim Production.",
+          // rootCause:
+          //   "It appears to be due to the fact that most work orders have 2 workers assigned to them, but these three at Anaheim Production only have one worker assigned.",
+          // suggestedAction:
+          //   "Would you like me to assign Joe Technician (W010) to these work orders? He has the right skills for these tasks and is currently available at Anaheim Production.",
           affectedItemsCount: overdueIds.length,
           filterFunction: filterOverdueWorkOrders,
           executeAction: executeOverdueAction,
@@ -268,7 +265,7 @@ export default function Home() {
 
         // Update work orders with new worker
         const updatedWorkOrders = workOrders.map((wo) => {
-          if (wo.location === "Anaheim Production" && wo.status === "Overdue") {
+          if (wo.status === "Overdue") {
             return {
               ...wo,
               assignedWorkers: [...wo.assignedWorkers, "W010"],
@@ -427,6 +424,44 @@ export default function Home() {
   // Get current insight
   const currentInsight = insights[currentInsightIndex];
 
+  const fetchRootCauseAndAction = async () => {
+    const rootCauses = await fetch("/api/ai/rootCause", {
+      method: "POST",
+      body: JSON.stringify({
+        workOrders: filteredWorkOrders.filter((wo) => wo.status === "Overdue"),
+        issue: "overdue",
+      }),
+    });
+    const rootCausesData = await rootCauses.json();
+
+    const actions = await fetch("/api/ai/suggestActions", {
+      method: "POST",
+      body: JSON.stringify({
+        workOrders: filteredWorkOrders.filter((wo) => wo.status === "Overdue"),
+        issue: "overdue",
+        rootCause: rootCausesData?.root_cause,
+      }),
+    });
+    const actionsData = await actions.json();
+
+    console.log(actionsData);
+
+    const newInsights = insights.map((insight, index) => {
+      if (index === 0) {
+        return {
+          ...insight,
+          rootCause: rootCausesData?.explanation,
+          suggestedAction: actionsData?.explanation,
+        };
+      }
+      return insight;
+    });
+
+    console.log(newInsights);
+
+    setInsights(newInsights);
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       <Header />
@@ -457,6 +492,7 @@ export default function Home() {
                 onSkip={handleSkipInsight}
                 insightNumber={currentInsightIndex + 1}
                 totalInsights={insights.length}
+                onWhyClick={fetchRootCauseAndAction}
               />
             )}
           </div>

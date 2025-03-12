@@ -12,6 +12,7 @@ interface AIInsightProps {
   onSkip?: () => void;
   insightNumber?: number;
   totalInsights?: number;
+  onWhyClick?: () => void;
 }
 
 const AIInsight: React.FC<AIInsightProps> = ({
@@ -25,6 +26,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
   onSkip,
   insightNumber = 1,
   totalInsights = 1,
+  onWhyClick,
 }) => {
   // State to track if cause is shown
   const [showCause, setShowCause] = useState(false);
@@ -46,6 +48,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
 
   // Handle Why button click
   const handleWhyClick = () => {
+    onWhyClick?.();
     setShowCause(true);
     // After showing cause, automatically show action after a delay
     if (suggestedAction) {
@@ -208,7 +211,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
             </div>
             <h4 className="font-medium text-gray-800">Issue Identified</h4>
           </div>
-          {rootCause && !showCause && (
+          {!showCause && (
             <button
               onClick={handleWhyClick}
               className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium transition-colors"
