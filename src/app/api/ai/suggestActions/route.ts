@@ -19,14 +19,31 @@ export async function POST(request: NextRequest) {
     const workOrders = await readCSV("workOrders.csv");
     const workers = await readCSV("workers.csv");
 
-    // Filter for relevant work orders if needed
-    const overdueWorkOrders = workOrders.filter(
-      (wo) => wo.status === "Overdue"
-    );
+    let filteredWorkOrders = workOrders;
+
+    switch (issue) {
+      case "overdue":
+        // Filter for relevant work orders if needed
+        filteredWorkOrders = workOrders.filter((wo) => wo.status === "Overdue");
+        break;
+      case "high_priority":
+        // Filter for relevant work orders if needed
+        filteredWorkOrders = workOrders.filter((wo) => wo.priority === "High");
+        break;
+      case "skill_gap":
+        // Filter for relevant work orders if needed
+        filteredWorkOrders = workOrders.filter(
+          (wo) => wo.assignedWorkers.length < 2 && wo.status === "In Progress"
+        );
+        break;
+      default: {
+        filteredWorkOrders = workOrders;
+      }
+    }
 
     // Get action suggestions using OpenAI
     const suggestedActions = await suggestActions(
-      overdueWorkOrders.length > 0 ? overdueWorkOrders : workOrders,
+      filteredWorkOrders,
       workers,
       issue,
       rootCause

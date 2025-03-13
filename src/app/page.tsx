@@ -5,35 +5,9 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import WorkOrderTable from "@/components/WorkOrderTable";
 import AIInsight from "@/components/AIInsight";
-
-interface WorkOrder {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
-  status: string;
-  dueDate: string;
-  assignedWorkers: string[];
-  priority: string;
-  createdAt: string;
-}
-
-interface WorkerAssignment {
-  workerId: string;
-  workOrderId: string;
-  resource?: string;
-}
-
-interface Insight {
-  id: number;
-  issue: string;
-  rootCause?: string;
-  suggestedAction?: string;
-  affectedItemsCount?: number;
-  successMessage?: string;
-  filterFunction?: () => void;
-  executeAction?: (changes?: WorkerAssignment[]) => void;
-}
+import { Insight, WorkOrderChanges } from "@/utils/types";
+import { WorkOrder } from "@/utils/types";
+import { useToast } from "@/components/Toast";
 
 export default function Home() {
   // State for work orders
@@ -41,6 +15,7 @@ export default function Home() {
   const [filteredWorkOrders, setFilteredWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   // Filter states
   const [idFilter, setIdFilter] = useState("");
@@ -48,22 +23,15 @@ export default function Home() {
   const [locationFilter, setLocationFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
   const [isFiltered, setIsFiltered] = useState(false);
+  const [workerCountFilter, setWorkerCountFilter] = useState<number | null>(
+    null
+  );
 
   // State for AI analysis
   const [aiLoading, setAiLoading] = useState(false);
   const [currentInsightIndex, setCurrentInsightIndex] = useState(0);
+  const [currentInsight, setCurrentInsight] = useState<Insight | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
-  const [overdueWorkOrderIds, setOverdueWorkOrderIds] = useState<string[]>([]);
-  const [highPriorityWorkOrderIds, setHighPriorityWorkOrderIds] = useState<
-    string[]
-  >([]);
-  const [maintenanceDueAssetIds, setMaintenanceDueAssetIds] = useState<
-    string[]
-  >([]);
-  const [lowInventoryPartIds, setLowInventoryPartIds] = useState<string[]>([]);
-  const [skillGapWorkOrderIds, setSkillGapWorkOrderIds] = useState<string[]>(
-    []
-  );
 
   // Fetch work orders on component mount
   useEffect(() => {
@@ -125,12 +93,19 @@ export default function Home() {
       );
     }
 
+    if (workerCountFilter !== null) {
+      filtered = filtered.filter(
+        (wo) => wo.assignedWorkers.length < workerCountFilter
+      );
+    }
+
     setFilteredWorkOrders(filtered);
     setIsFiltered(
       idFilter !== "" ||
         statusFilter !== "" ||
         locationFilter !== "" ||
-        priorityFilter !== ""
+        priorityFilter !== "" ||
+        workerCountFilter !== null
     );
   };
 
@@ -140,6 +115,7 @@ export default function Home() {
     setStatusFilter("");
     setLocationFilter("");
     setPriorityFilter("");
+    setWorkerCountFilter(null);
     setFilteredWorkOrders(workOrders);
     setIsFiltered(false);
   };
@@ -156,9 +132,10 @@ export default function Home() {
   };
 
   // Filter by San Diego Plant work orders
-  const filterSanDiegoWorkOrders = () => {
+  const filterSkillGapWorkOrders = () => {
     clearFilters();
-    setLocationFilter("san diego plant");
+    setStatusFilter("in progress");
+    setWorkerCountFilter(2);
   };
 
   // Filter by Los Angeles Facility work orders
@@ -173,38 +150,28 @@ export default function Home() {
       setAiLoading(true);
 
       // Find overdue work orders at Anaheim Production
-      const overdueAtAnaheim = data.filter(
-        (wo) => wo.status === "Overdue" && wo.location === "Anaheim Production"
-      );
+      const overdueWorkOrders = data.filter((wo) => wo.status === "Overdue");
 
       // Store their IDs for filtering
-      const overdueIds = overdueAtAnaheim.map((wo) => wo.id);
-      setOverdueWorkOrderIds(overdueIds);
+      const overdueIds = overdueWorkOrders.map((wo) => wo.id);
 
       // Find high priority work orders
-      const highPriorityWOs = data.filter((wo) => wo.priority === "High");
-      const highPriorityIds = highPriorityWOs.map((wo) => wo.id);
-      setHighPriorityWorkOrderIds(highPriorityIds);
+      const highPriorityIds = data
+        .filter((wo) => wo.priority === "High")
+        .map((wo) => wo.id);
 
       // Find work orders at San Diego Plant with skill gaps
-      const skillGapWOs = data.filter(
-        (wo) =>
-          wo.location === "San Diego Plant" &&
-          wo.status === "In Progress" &&
-          wo.assignedWorkers.length < 2
-      );
-      const skillGapIds = skillGapWOs.map((wo) => wo.id);
-      setSkillGapWorkOrderIds(skillGapIds);
+      const skillGapIds = data
+        .filter(
+          (wo) => wo.status === "In Progress" && wo.assignedWorkers.length < 2
+        )
+        .map((wo) => wo.id);
 
       // Create insights
       const allInsights: Insight[] = [
         {
           id: 1,
           issue: `I noticed you have ${overdueIds.length} overdue work orders`,
-          // rootCause:
-          //   "It appears to be due to the fact that most work orders have 2 workers assigned to them, but these three at Anaheim Production only have one worker assigned.",
-          // suggestedAction:
-          //   "Would you like me to assign Joe Technician (W010) to these work orders? He has the right skills for these tasks and is currently available at Anaheim Production.",
           affectedItemsCount: overdueIds.length,
           filterFunction: filterOverdueWorkOrders,
           executeAction: executeOverdueAction,
@@ -212,23 +179,19 @@ export default function Home() {
         {
           id: 2,
           issue: `There are ${highPriorityIds.length} high priority work orders that require immediate attention.`,
-          // rootCause:
-          //   "These work orders are critical for production equipment at San Diego Plant and Los Angeles Facility. Delays could impact production schedules.",
-          // suggestedAction:
-          //   "Would you like me to notify Maria Rodriguez (W002) and David Johnson (W003) about these high priority tasks? They are the supervisors for these locations.",
           affectedItemsCount: highPriorityIds.length,
           filterFunction: filterHighPriorityWorkOrders,
           executeAction: executeHighPriorityAction,
         },
         {
           id: 3,
-          issue: `I've identified ${skillGapIds.length} work orders at San Diego Plant that may require additional skills.`,
-          rootCause:
-            "These work orders involve complex mechanical systems that typically require specialized welding skills. Currently, they only have one worker assigned.",
-          suggestedAction:
-            "Would you like me to assign Sarah Williams (W004) to assist with these work orders? She has the necessary welding certification and will be available tomorrow.",
+          issue: `I've identified ${skillGapIds.length} work orders that require additional skills.`,
+          // rootCause:
+          //   "These work orders involve complex mechanical systems that typically require specialized welding skills. Currently, they only have one worker assigned.",
+          // suggestedAction:
+          //   "Would you like me to assign Sarah Williams (W004) to assist with these work orders? She has the necessary welding certification and will be available tomorrow.",
           affectedItemsCount: skillGapIds.length,
-          filterFunction: filterSanDiegoWorkOrders,
+          filterFunction: filterSkillGapWorkOrders,
           executeAction: executeSkillGapAction,
         },
         {
@@ -267,30 +230,61 @@ export default function Home() {
   };
 
   // Handle action execution for overdue work orders
-  const executeOverdueAction = async (changes?: WorkerAssignment[]) => {
+  const executeOverdueAction = async (changes?: WorkOrderChanges[]) => {
     try {
       setAiLoading(true);
 
       // Simulate API call to execute action
       setTimeout(() => {
-        setAiLoading(false);
-
         if (!changes || changes.length === 0) {
           console.log("No changes to apply");
+          setAiLoading(false);
           return;
         }
 
         // Create a new array of updated work orders
         const updatedWorkOrders = workOrders.map((wo) => {
           // Check if this work order needs to be updated
-          const change = changes.find((c) => c.workOrderId === wo.id);
+          const workOrderChanges = changes.filter(
+            (c) => c.workOrderId === wo.id
+          );
 
-          if (change) {
-            // Create a new work order object with the worker added
-            return {
-              ...wo,
-              assignedWorkers: [...wo.assignedWorkers, change.workerId],
-            };
+          if (workOrderChanges.length > 0) {
+            // Create a new work order object with all changes applied
+            const updatedWorkOrder = { ...wo };
+
+            workOrderChanges.forEach((change) => {
+              if (change.field === "assignedWorkers" && change.newValue) {
+                // Handle adding workers to assignedWorkers array
+                // Since newValue is now an array of strings, we can spread it directly
+                updatedWorkOrder.assignedWorkers = change.newValue;
+                // Show toast notification for worker assignment
+                change.newValue.forEach((worker) => {
+                  showToast({
+                    message: `Worker ${worker} assigned to work order ${wo.id}`,
+                    type: "success",
+                    duration: 3000,
+                  });
+                });
+              } else if (
+                change.field === "status" &&
+                change.newValue &&
+                change.newValue.length > 0
+              ) {
+                // Handle status change - use the first value in the array
+                updatedWorkOrder.status = change.newValue[0];
+              } else if (
+                change.field === "priority" &&
+                change.newValue &&
+                change.newValue.length > 0
+              ) {
+                // Handle priority change - use the first value in the array
+                updatedWorkOrder.priority = change.newValue[0];
+              }
+              // Add more field handlers as needed
+            });
+
+            return updatedWorkOrder;
           }
 
           // Return the original work order if no changes needed
@@ -307,7 +301,8 @@ export default function Home() {
           setFilteredWorkOrders(updatedWorkOrders);
         }
 
-        console.log("Work orders updated with new worker assignments");
+        console.log("Work orders updated with new changes");
+        setAiLoading(false);
       }, 1000);
     } catch (err) {
       console.error("Error executing action:", err);
@@ -316,18 +311,85 @@ export default function Home() {
   };
 
   // Handle action execution for high priority work orders
-  const executeHighPriorityAction = async () => {
+  const executeHighPriorityAction = async (changes?: WorkOrderChanges[]) => {
     try {
       setAiLoading(true);
 
       // Simulate API call to execute action
       setTimeout(() => {
-        setAiLoading(false);
+        if (changes && changes.length > 0) {
+          // Process any changes to work orders if needed
+          const updatedWorkOrders = workOrders.map((wo) => {
+            const workOrderChanges = changes.filter(
+              (c) => c.workOrderId === wo.id
+            );
+
+            if (workOrderChanges.length > 0) {
+              const updatedWorkOrder = { ...wo };
+
+              workOrderChanges.forEach((change) => {
+                if (
+                  change.field === "status" &&
+                  change.newValue &&
+                  change.newValue.length > 0
+                ) {
+                  updatedWorkOrder.status = change.newValue[0];
+                } else if (
+                  change.field === "priority" &&
+                  change.newValue &&
+                  change.newValue.length > 0
+                ) {
+                  updatedWorkOrder.priority = change.newValue[0];
+                } else if (
+                  change.field === "assignedWorkers" &&
+                  change.newValue
+                ) {
+                  // Add the workers to the assigned workers array
+                  updatedWorkOrder.assignedWorkers = change.newValue;
+                  // Show toast notification for worker assignment
+                  change.newValue.forEach((worker) => {
+                    showToast({
+                      message: `Worker ${worker} assigned to work order ${wo.id}`,
+                      type: "success",
+                      duration: 3000,
+                    });
+                  });
+                } else if (
+                  change.field === "notified" &&
+                  change.newValue &&
+                  change.newValue.includes("true")
+                ) {
+                  // Show toast notification instead of console log
+                  showToast({
+                    message: `Notification sent to supervisors & workers for work order ${wo.id}`,
+                    type: "success",
+                    duration: 3000,
+                  });
+                }
+              });
+
+              return updatedWorkOrder;
+            }
+            return wo;
+          });
+
+          // Update work orders if changes were made
+          setWorkOrders(updatedWorkOrders);
+
+          // Apply current filters
+          if (isFiltered) {
+            applyFilters();
+          } else {
+            setFilteredWorkOrders(updatedWorkOrders);
+          }
+        }
 
         // In a real app, this would send notifications to the supervisors
         console.log(
           "Notifications sent to supervisors about high priority work orders"
         );
+
+        setAiLoading(false);
       }, 2000);
     } catch (err) {
       console.error("Error executing action:", err);
@@ -336,37 +398,70 @@ export default function Home() {
   };
 
   // Handle action execution for skill gap work orders
-  const executeSkillGapAction = async () => {
+  const executeSkillGapAction = async (changes?: WorkOrderChanges[]) => {
     try {
       setAiLoading(true);
 
       // Simulate API call to execute action
       setTimeout(() => {
-        setAiLoading(false);
+        // If we have specific changes from the API, use those
+        if (changes && changes.length > 0) {
+          const updatedWorkOrders = workOrders.map((wo) => {
+            const workOrderChanges = changes.filter(
+              (c) => c.workOrderId === wo.id
+            );
 
-        // Update work orders with new worker
-        const updatedWorkOrders = workOrders.map((wo) => {
-          if (
-            wo.location === "San Diego Plant" &&
-            wo.status === "In Progress" &&
-            wo.assignedWorkers.length < 2
-          ) {
-            return {
-              ...wo,
-              assignedWorkers: [...wo.assignedWorkers, "W004"],
-            };
+            if (workOrderChanges.length > 0) {
+              const updatedWorkOrder = { ...wo };
+
+              workOrderChanges.forEach((change) => {
+                if (change.field === "assignedWorkers" && change.newValue) {
+                  // Merge the new workers with existing ones instead of replacing
+                  // Create a Set to avoid duplicates
+                  const existingWorkers = new Set(
+                    updatedWorkOrder.assignedWorkers
+                  );
+                  change.newValue.forEach((worker) =>
+                    existingWorkers.add(worker)
+                  );
+                  updatedWorkOrder.assignedWorkers =
+                    Array.from(existingWorkers);
+
+                  // Show toast notification for worker assignment
+                  change.newValue.forEach((worker) => {
+                    showToast({
+                      message: `Worker ${worker} assigned to work order ${wo.id}`,
+                      type: "success",
+                      duration: 3000,
+                    });
+                  });
+                } else if (
+                  change.field === "status" &&
+                  change.newValue &&
+                  change.newValue.length > 0
+                ) {
+                  updatedWorkOrder.status = change.newValue[0];
+                }
+              });
+
+              return updatedWorkOrder;
+            }
+            return wo;
+          });
+
+          setWorkerCountFilter(null);
+
+          setWorkOrders(updatedWorkOrders);
+
+          // If filters are applied, update filtered work orders too
+          if (isFiltered) {
+            applyFilters();
+          } else {
+            setFilteredWorkOrders(updatedWorkOrders);
           }
-          return wo;
-        });
-
-        setWorkOrders(updatedWorkOrders);
-
-        // If filters are applied, update filtered work orders too
-        if (isFiltered) {
-          applyFilters();
-        } else {
-          setFilteredWorkOrders(updatedWorkOrders);
         }
+
+        setAiLoading(false);
       }, 2000);
     } catch (err) {
       console.error("Error executing action:", err);
@@ -375,18 +470,77 @@ export default function Home() {
   };
 
   // Handle action execution for preventive maintenance
-  const executePreventiveMaintenanceAction = async () => {
+  const executePreventiveMaintenanceAction = async (
+    changes?: WorkOrderChanges[]
+  ) => {
     try {
       setAiLoading(true);
 
       // Simulate API call to execute action
       setTimeout(() => {
-        setAiLoading(false);
+        // Process changes if provided
+        if (changes && changes.length > 0) {
+          const updatedWorkOrders = workOrders.map((wo) => {
+            const workOrderChanges = changes.filter(
+              (c) => c.workOrderId === wo.id
+            );
+
+            if (workOrderChanges.length > 0) {
+              const updatedWorkOrder = { ...wo };
+
+              workOrderChanges.forEach((change) => {
+                if (change.field === "assignedWorkers" && change.newValue) {
+                  // Add the workers to the assigned workers array
+                  updatedWorkOrder.assignedWorkers = [
+                    ...updatedWorkOrder.assignedWorkers,
+                    ...change.newValue,
+                  ];
+                  // Show toast notification for worker assignment
+                  change.newValue.forEach((worker) => {
+                    showToast({
+                      message: `Worker ${worker} assigned to work order ${wo.id}`,
+                      type: "success",
+                      duration: 3000,
+                    });
+                  });
+                } else if (
+                  change.field === "status" &&
+                  change.newValue &&
+                  change.newValue.length > 0
+                ) {
+                  updatedWorkOrder.status = change.newValue[0];
+                }
+              });
+
+              return updatedWorkOrder;
+            }
+            return wo;
+          });
+
+          setWorkOrders(updatedWorkOrders);
+
+          // If filters are applied, update filtered work orders too
+          if (isFiltered) {
+            applyFilters();
+          } else {
+            setFilteredWorkOrders(updatedWorkOrders);
+          }
+        }
 
         // In a real app, this would create new preventive maintenance work orders
         console.log(
           "Preventive maintenance work orders created and assigned to W003"
         );
+
+        // Show toast notification for preventive maintenance
+        showToast({
+          message:
+            "Preventive maintenance work orders created and assigned to W003",
+          type: "success",
+          duration: 3000,
+        });
+
+        setAiLoading(false);
       }, 2000);
     } catch (err) {
       console.error("Error executing action:", err);
@@ -395,16 +549,78 @@ export default function Home() {
   };
 
   // Handle action execution for inventory
-  const executeInventoryAction = async () => {
+  const executeInventoryAction = async (changes?: WorkOrderChanges[]) => {
     try {
       setAiLoading(true);
 
       // Simulate API call to execute action
       setTimeout(() => {
-        setAiLoading(false);
+        // Process changes if provided
+        if (changes && changes.length > 0) {
+          const updatedWorkOrders = workOrders.map((wo) => {
+            const workOrderChanges = changes.filter(
+              (c) => c.workOrderId === wo.id
+            );
+
+            if (workOrderChanges.length > 0) {
+              const updatedWorkOrder = { ...wo };
+
+              workOrderChanges.forEach((change) => {
+                if (change.field === "assignedWorkers" && change.newValue) {
+                  // Add the workers to the assigned workers array
+                  updatedWorkOrder.assignedWorkers = [
+                    ...updatedWorkOrder.assignedWorkers,
+                    ...change.newValue,
+                  ];
+                  // Show toast notification for worker assignment
+                  change.newValue.forEach((worker) => {
+                    showToast({
+                      message: `Worker ${worker} assigned to work order ${wo.id}`,
+                      type: "success",
+                      duration: 3000,
+                    });
+                  });
+                } else if (
+                  change.field === "status" &&
+                  change.newValue &&
+                  change.newValue.length > 0
+                ) {
+                  updatedWorkOrder.status = change.newValue[0];
+                } else if (
+                  change.field === "priority" &&
+                  change.newValue &&
+                  change.newValue.length > 0
+                ) {
+                  updatedWorkOrder.priority = change.newValue[0];
+                }
+              });
+
+              return updatedWorkOrder;
+            }
+            return wo;
+          });
+
+          setWorkOrders(updatedWorkOrders);
+
+          // If filters are applied, update filtered work orders too
+          if (isFiltered) {
+            applyFilters();
+          } else {
+            setFilteredWorkOrders(updatedWorkOrders);
+          }
+        }
 
         // In a real app, this would create purchase orders
         console.log("Purchase orders generated for low inventory parts");
+
+        // Show toast notification for inventory action
+        showToast({
+          message: "Purchase orders generated for critical spare parts",
+          type: "success",
+          duration: 3000,
+        });
+
+        setAiLoading(false);
       }, 2000);
     } catch (err) {
       console.error("Error executing action:", err);
@@ -445,7 +661,7 @@ export default function Home() {
   };
 
   // Handle skip to next insight
-  const handleSkipInsight = () => {
+  const handleNextInsight = () => {
     if (currentInsightIndex < insights.length - 1) {
       setCurrentInsightIndex(currentInsightIndex + 1);
     } else {
@@ -454,8 +670,17 @@ export default function Home() {
     }
   };
 
-  // Get current insight
-  const currentInsight = insights[currentInsightIndex];
+  const handlePreviousInsight = () => {
+    if (currentInsightIndex > 0) {
+      setCurrentInsightIndex(currentInsightIndex - 1);
+    } else {
+      setCurrentInsightIndex(insights.length - 1);
+    }
+  };
+
+  useEffect(() => {
+    setCurrentInsight(insights[currentInsightIndex]);
+  }, [currentInsightIndex, insights]);
 
   const fetchRootCauseAndAction = async () => {
     setAiLoading(true);
@@ -463,9 +688,7 @@ export default function Home() {
       let issue = "";
       let workOrders: WorkOrder[] = [];
 
-      console.log(currentInsight?.id);
-
-      switch (currentInsight.id) {
+      switch (currentInsight?.id) {
         case 1: {
           issue = "overdue";
           workOrders = filteredWorkOrders.filter(
@@ -474,20 +697,16 @@ export default function Home() {
           break;
         }
         case 2: {
-          issue = "high priority";
+          issue = "high_priority";
           workOrders = filteredWorkOrders.filter(
             (wo) => wo.priority === "High"
           );
-          console.log("are you here?");
           break;
         }
         case 3: {
-          issue = "skill gap";
+          issue = "skill_gap";
           workOrders = filteredWorkOrders.filter(
-            (wo) =>
-              wo.location === "San Diego Plant" &&
-              wo.status === "In Progress" &&
-              wo.assignedWorkers.length < 2
+            (wo) => wo.status === "In Progress" && wo.assignedWorkers.length < 2
           );
           break;
         }
@@ -497,6 +716,7 @@ export default function Home() {
       }
 
       if (!workOrders.length) {
+        setAiLoading(false);
         return;
       }
 
@@ -522,16 +742,60 @@ export default function Home() {
       // Only update if we have valid data
       if (rootCausesData?.explanation || actionsData?.explanation) {
         const newInsights = insights.map((insight, index) => {
-          if (index === 0) {
+          if (index === currentInsightIndex) {
+            // Update the current insight instead of always updating the first one
+            let executeActionFn = insight.executeAction;
+            let filterFunctionFn = insight.filterFunction;
+
+            // Set the appropriate execute action function based on the insight ID
+            if (currentInsight?.id === 1 && actionsData?.changes) {
+              executeActionFn = () => executeOverdueAction(actionsData.changes);
+              filterFunctionFn = () => {
+                clearFilters();
+                filterOverdueWorkOrders();
+              };
+            } else if (currentInsight?.id === 2) {
+              // For high priority work orders, pass the changes array if it exists
+              executeActionFn = actionsData?.changes
+                ? () => executeHighPriorityAction(actionsData.changes)
+                : executeHighPriorityAction;
+              filterFunctionFn = () => {
+                clearFilters();
+                filterHighPriorityWorkOrders();
+              };
+            } else if (currentInsight?.id === 3) {
+              executeActionFn = actionsData?.changes
+                ? () => executeSkillGapAction(actionsData.changes)
+                : executeSkillGapAction;
+              filterFunctionFn = () => {
+                clearFilters();
+                filterSkillGapWorkOrders();
+              };
+            } else if (currentInsight?.id === 4) {
+              executeActionFn = actionsData?.changes
+                ? () => executePreventiveMaintenanceAction(actionsData.changes)
+                : executePreventiveMaintenanceAction;
+              filterFunctionFn = () => {
+                clearFilters();
+                filterLosAngelesWorkOrders();
+              };
+            } else if (currentInsight?.id === 5) {
+              executeActionFn = actionsData?.changes
+                ? () => executeInventoryAction(actionsData.changes)
+                : executeInventoryAction;
+              filterFunctionFn = () => {
+                clearFilters();
+                filterOverdueWorkOrders();
+              };
+            }
+
             return {
               ...insight,
               rootCause: rootCausesData?.explanation || insight.rootCause,
               suggestedAction:
                 actionsData?.explanation || insight.suggestedAction,
-              filterFunction: filterOverdueWorkOrders,
-              executeAction: actionsData?.changes
-                ? () => executeOverdueAction(actionsData.changes)
-                : insight.executeAction,
+              executeAction: executeActionFn,
+              filterFunction: filterFunctionFn,
               successMessage:
                 actionsData?.successMessage || insight.successMessage,
             };
@@ -540,13 +804,14 @@ export default function Home() {
         });
 
         // Only update state if something actually changed
-        const currentInsight = insights[0] || {};
-        const newInsight = newInsights[0] || {};
+        const currentInsightData = insights[currentInsightIndex] || {};
+        const newInsightData = newInsights[currentInsightIndex] || {};
 
         const hasChanged =
-          currentInsight.rootCause !== newInsight.rootCause ||
-          currentInsight.suggestedAction !== newInsight.suggestedAction ||
-          currentInsight.successMessage !== newInsight.successMessage;
+          currentInsightData.rootCause !== newInsightData.rootCause ||
+          currentInsightData.suggestedAction !==
+            newInsightData.suggestedAction ||
+          currentInsightData.successMessage !== newInsightData.successMessage;
 
         if (hasChanged) {
           console.log("Updating insights with new data");
@@ -563,9 +828,9 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       <Header />
-      <div className="flex flex-1">
+      <div className="flex flex-1 pt-16">
         <Sidebar activeTab="work orders" />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 ml-64">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800">Work Orders</h1>
             <p className="text-gray-600">
@@ -587,7 +852,8 @@ export default function Home() {
                 onActionClick={currentInsight.executeAction}
                 onViewAffectedItems={currentInsight.filterFunction}
                 affectedItemsCount={currentInsight.affectedItemsCount}
-                onSkip={handleSkipInsight}
+                onNext={handleNextInsight}
+                onPrevious={handlePreviousInsight}
                 insightNumber={currentInsightIndex + 1}
                 totalInsights={insights.length}
                 onWhyClick={fetchRootCauseAndAction}
@@ -717,7 +983,7 @@ export default function Home() {
                   </div>
 
                   {isFiltered && (
-                    <div className="flex items-end">
+                    <div className="flex items-end mt-6">
                       <button
                         onClick={clearFilters}
                         className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"

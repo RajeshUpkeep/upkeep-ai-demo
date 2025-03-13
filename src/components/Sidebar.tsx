@@ -27,7 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab }) => {
   ];
 
   return (
-    <aside className="bg-gray-800 text-white w-64 min-h-screen p-4">
+    <aside className="bg-gray-800 text-white w-64 fixed h-screen p-4 overflow-y-auto top-16">
       <nav>
         <ul className="space-y-2">
           {navItems.map((item) => (

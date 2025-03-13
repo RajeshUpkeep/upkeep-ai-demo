@@ -199,9 +199,9 @@ export default function WorkersPage() {
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       <Header />
-      <div className="flex flex-1">
+      <div className="flex flex-1 pt-16">
         <Sidebar activeTab="workers" />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 ml-64">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-gray-800">Workers</h1>
             <p className="text-gray-600">Manage and track maintenance personnel</p>

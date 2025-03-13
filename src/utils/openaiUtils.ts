@@ -2,52 +2,7 @@
 import { openai } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { z } from "zod";
-
-/**
- * Analyze work orders to identify issues
- * @param workOrders - Array of work order objects
- * @returns Promise<string> - A promise that resolves to the AI's analysis
- */
-export async function analyzeWorkOrders(
-  workOrders: any[],
-  criteria = "overdue"
-): Promise<string> {
-  try {
-    const { object } = await generateObject({
-      model: openai("gpt-4o"),
-      output: "array",
-      schema: z.object({
-        root_cause: z.string(),
-        suggested_actions: z.array(z.string()),
-      }),
-      prompt: `Analyze these work orders and identify the root cause of ${criteria} work orders: ${JSON.stringify(
-        workOrders
-      )}`,
-      temperature: 0.2,
-    });
-    // const response = await openai.chat.completions.create({
-    //   model: "gpt-4",
-    //   messages: [
-    //     {
-    //       role: "system",
-    //       content: `You are an AI assistant for a maintenance management system. Your task is to analyze work orders and identify potential issues such as ${criteria} work orders, `,
-    //     },
-    //     {
-    //       role: "user",
-    //       content: `Analyze these work orders and identify any potential issues: ${JSON.stringify(
-    //         workOrders
-    //       )},
-    //       return the response in a json format, with root_cause and suggested_actions`,
-    //     },
-    //   ],
-    // });
-
-    return object;
-  } catch (error) {
-    console.error("Error analyzing work orders:", error);
-    return "Error analyzing work orders.";
-  }
-}
+import { WorkOrder } from "./types";
 
 /**
  * Identify root causes for issues
@@ -57,21 +12,15 @@ export async function analyzeWorkOrders(
  * @returns Promise<string> - A promise that resolves to the AI's root cause analysis
  */
 export async function identifyRootCause(
-  workOrders: any[],
-  workers: any[],
+  workOrders: WorkOrder[],
+  workers: Worker[],
   issue: string
 ) {
   try {
     const { object } = await generateObject({
       model: openai("gpt-4o"),
       schema: z.object({
-        rootCause: z.enum([
-          "worker_assignment",
-          "scheduling",
-          "resource_allocation",
-          "skill_gap",
-          "high_priority",
-        ]),
+        rootCause: z.enum(["worker_assignment", "skill_gap", "high_priority"]),
         explanation: z.string(),
       }),
       system:
@@ -81,7 +30,8 @@ export async function identifyRootCause(
       Workers: ${JSON.stringify(workers)}
       Identified Issue: ${issue}
 
-      Analyze the data and identify the root cause of the issue. Focus on patterns like worker assignments, scheduling, notifying supervisors, resource allocation, skill gaps, high priority work orders .`,
+      Analyze the data and identify the root cause of the issue. 
+      Focus on patterns like worker assignments, skill gaps, notifying supervisors about high priority work orders .`,
       temperature: 0.2,
     });
 
@@ -101,8 +51,8 @@ export async function identifyRootCause(
  * @returns Promise<string> - A promise that resolves to the AI's suggested actions
  */
 export async function suggestActions(
-  workOrders: any[],
-  workers: any[],
+  workOrders: WorkOrder[],
+  workers: Worker[],
   issue: string,
   rootCause: string
 ) {
@@ -111,25 +61,14 @@ export async function suggestActions(
       model: openai("gpt-4o"),
       schema: z.object({
         explanation: z.string(),
-        rootCause: z.enum([
-          "worker_assignment",
-          "scheduling",
-          "resource_allocation",
-          "skill_gap",
-          "high_priority",
-        ]),
-        suggestedAction: z.enum([
-          "assign_worker",
-          "reschedule_work_order",
-          "reallocate_resources",
-          "notify_supervisor",
-        ]),
+        rootCause: z.enum(["worker_assignment", "skill_gap", "high_priority"]),
+        suggestedAction: z.enum(["assign_worker", "notify_supervisor"]),
         successMessage: z.string(),
         changes: z.array(
           z.object({
-            workerId: z.string(),
             workOrderId: z.string(),
-            resource: z.string(),
+            field: z.string(),
+            newValue: z.array(z.string()),
           })
         ),
       }),
@@ -148,30 +87,6 @@ export async function suggestActions(
     });
 
     return object;
-
-    // const response = await openai.chat.completions.create({
-    //   model: "gpt-4-turbo",
-    //   messages: [
-    //     {
-    //       role: "system",
-    //       content:
-    //         "You are an AI assistant for a maintenance management system. Your task is to suggest actions to resolve identified issues based on their root causes.",
-    //     },
-    //     {
-    //       role: "user",
-    //       content: `
-    //         Work Orders: ${JSON.stringify(workOrders)}
-    //         Workers: ${JSON.stringify(workers)}
-    //         Identified Issue: ${issue}
-    //         Root Cause: ${rootCause}
-
-    //         Suggest specific actions to resolve the issue. Be specific about which work orders need attention and which workers could be assigned.
-    //       `,
-    //     },
-    //   ],
-    //   temperature: 0.7,
-    //   max_tokens: 500,
-    // });
   } catch (error) {
     console.error("Error suggesting actions:", error);
     return "Error suggesting actions.";

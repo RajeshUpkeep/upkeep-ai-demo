@@ -9,7 +9,8 @@ interface AIInsightProps {
   onViewAffectedItems?: () => void;
   affectedItemsCount?: number;
   loading?: boolean;
-  onSkip?: () => void;
+  onNext?: () => void;
+  onPrevious?: () => void;
   insightNumber?: number;
   totalInsights?: number;
   onWhyClick?: () => void;
@@ -24,7 +25,8 @@ const AIInsight: React.FC<AIInsightProps> = ({
   onViewAffectedItems,
   affectedItemsCount = 0,
   loading = false,
-  onSkip,
+  onNext,
+  onPrevious,
   insightNumber = 1,
   totalInsights = 1,
   onWhyClick,
@@ -38,6 +40,13 @@ const AIInsight: React.FC<AIInsightProps> = ({
   const [actionCompleted, setActionCompleted] = useState(false);
   // Animation for the AI thinking effect
   const [dots, setDots] = useState("");
+
+  // Reset states when switching between insights
+  React.useEffect(() => {
+    setShowCause(false);
+    setShowAction(false);
+    setActionCompleted(false);
+  }, [insightNumber]);
 
   React.useEffect(() => {
     if (loading) {
@@ -75,8 +84,14 @@ const AIInsight: React.FC<AIInsightProps> = ({
 
   // Handle skip button click
   const handleSkip = () => {
-    if (onSkip) {
-      onSkip();
+    if (onNext) {
+      onNext();
+    }
+  };
+
+  const handlePrevious = () => {
+    if (onPrevious) {
+      onPrevious();
     }
   };
 
@@ -182,18 +197,26 @@ const AIInsight: React.FC<AIInsightProps> = ({
             </p>
           </div>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-4">
+          {onPrevious && (
+            <button
+              onClick={handlePrevious}
+              className=" hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+            >
+              Previous
+            </button>
+          )}
           {totalInsights > 1 && (
             <span className="text-sm text-gray-500 mr-3">
               Insight {insightNumber} of {totalInsights}
             </span>
           )}
-          {onSkip && (
+          {onNext && (
             <button
               onClick={handleSkip}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
+              className=" hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm font-medium transition-colors"
             >
-              Skip
+              Next
             </button>
           )}
         </div>
@@ -290,7 +313,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
                     View updated work orders
                   </button>
                 )}
-                {onSkip && (
+                {onNext && (
                   <button
                     onClick={handleSkip}
                     className="mt-2 ml-3 text-green-800 hover:text-green-900 hover:underline font-medium text-sm"

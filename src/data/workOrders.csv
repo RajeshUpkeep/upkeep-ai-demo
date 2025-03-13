@@ -10,17 +10,17 @@ WO008,Replace air filters in HVAC system,The air filters in the HVAC system need
 WO009,Inspect electrical panels,Regular inspection of all electrical panels for safety compliance,San Diego Plant,Scheduled,2023-03-25,"[""W005"", ""W009""]",High,2023-02-25
 WO010,Calibrate weighing scales,All weighing scales need calibration for accuracy,Los Angeles Facility,Completed,2023-02-10,"[""W006"", ""W010""]",Medium,2023-01-10
 WO011,Replace pump seals on cooling system,The cooling system pump seals are leaking and need replacement,Anaheim Production,In Progress,2023-03-18,"[""W001"", ""W004""]",High,2023-02-18
-WO012,Repair robotic arm on assembly line,The robotic arm on the assembly line is malfunctioning and needs repair,San Diego Plant,Overdue,2023-03-01,"[""W003""]",High,2023-02-01
+WO012,Repair robotic arm on assembly line,The robotic arm on the assembly line is malfunctioning and needs repair,San Diego Plant,Scheduled,2023-03-01,"[""W003""]",High,2023-02-01
 WO013,Upgrade control software on packaging machines,The control software on packaging machines needs to be upgraded to the latest version,Los Angeles Facility,Scheduled,2023-04-05,"[""W007"", ""W009""]",Medium,2023-03-05
 WO014,Inspect and clean dust collection system,Regular maintenance of the dust collection system to ensure proper operation,Anaheim Production,Completed,2023-02-28,"[""W002"", ""W008""]",Low,2023-01-28
 WO015,Replace worn gears in mixing equipment,The gears in the mixing equipment are showing excessive wear and need replacement,San Diego Plant,In Progress,2023-03-15,"[""W005""]",Medium,2023-02-15
 WO016,Calibrate pressure gauges on boiler system,All pressure gauges on the boiler system need calibration for safety compliance,Los Angeles Facility,Scheduled,2023-04-10,"[""W006""]",High,2023-03-10
-WO017,Repair leak in compressed air system,There is a significant leak in the compressed air system that needs to be located and repaired,Anaheim Production,Overdue,2023-03-05,"[""W001""]",High,2023-02-05
+WO017,Repair leak in compressed air system,There is a significant leak in the compressed air system that needs to be located and repaired,Anaheim Production,Scheduled,2023-03-05,"[""W001""]",High,2023-02-05
 WO018,Replace bearings in cooling tower fan,The bearings in the cooling tower fan are making noise and need replacement,San Diego Plant,Scheduled,2023-04-15,"[""W003"", ""W005""]",Medium,2023-03-15
 WO019,Inspect and test emergency shutdown systems,Regular testing of all emergency shutdown systems for safety compliance,Los Angeles Facility,In Progress,2023-03-20,"[""W002"", ""W006"", ""W010""]",High,2023-02-20
 WO020,Clean and inspect heat exchangers,The heat exchangers need cleaning and inspection due to reduced efficiency,Anaheim Production,Scheduled,2023-04-20,"[""W004"", ""W008""]",Medium,2023-03-20
-WO021,Repair damaged wiring in control panel,The wiring in the control panel has been damaged and needs repair,San Diego Plant,Overdue,2023-03-10,"[""W009""]",High,2023-02-10
+WO021,Repair damaged wiring in control panel,The wiring in the control panel has been damaged and needs repair,San Diego Plant,Scheduled,2023-03-10,"[""W009""]",High,2023-02-10
 WO022,Replace worn conveyor rollers,Multiple conveyor rollers are showing excessive wear and need replacement,Los Angeles Facility,In Progress,2023-03-25,"[""W003"", ""W007""]",Medium,2023-02-25
 WO023,Calibrate flow meters on process lines,All flow meters on process lines need calibration for accuracy,Anaheim Production,Completed,2023-03-01,"[""W001"", ""W004""]",Low,2023-02-01
 WO024,Repair roof leak in maintenance building,There is a roof leak in the maintenance building that needs repair,San Diego Plant,Scheduled,2023-04-25,"[""W005"", ""W009""]",Medium,2023-03-25
-WO025,Replace worn cutting blades on slitter,The cutting blades on the slitter are dull and need replacement,Los Angeles Facility,Overdue,2023-03-15,"[""W006"", ""W010""]",High,2023-02-15 
+WO025,Replace worn cutting blades on slitter,The cutting blades on the slitter are dull and need replacement,Los Angeles Facility,Scheduled,2023-03-15,"[""W006"", ""W010""]",High,2023-02-15 

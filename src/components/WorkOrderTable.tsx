@@ -125,14 +125,14 @@ const WorkOrderTable: React.FC<WorkOrderTableProps> = ({
                     .map((worker, index) => (
                       <div
                         key={index}
-                        className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-xs font-medium"
+                        className="w-8 h-8 rounded-full text-gray-800 bg-gray-300 border-2 border-white flex items-center justify-center text-xs font-medium"
                         title={`Worker ${worker}`}
                       >
                         {worker.substring(2)}
                       </div>
                     ))}
                   {workOrder.assignedWorkers.length > 3 && (
-                    <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center text-xs">
+                    <div className="w-8 h-8 rounded-full text-gray-800 bg-gray-200 border-2 border-white flex items-center justify-center text-xs">
                       +{workOrder.assignedWorkers.length - 3}
                     </div>
                   )}
