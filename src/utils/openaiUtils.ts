@@ -11,7 +11,7 @@ import { z } from "zod";
 export async function analyzeWorkOrders(
   workOrders: any[],
   criteria = "overdue"
-): Promise<string> {
+): Promise<any> {
   try {
     const { object } = await generateObject({
       model: openai("gpt-4o"),
@@ -25,23 +25,6 @@ export async function analyzeWorkOrders(
       )}`,
       temperature: 0.2,
     });
-    // const response = await openai.chat.completions.create({
-    //   model: "gpt-4",
-    //   messages: [
-    //     {
-    //       role: "system",
-    //       content: `You are an AI assistant for a maintenance management system. Your task is to analyze work orders and identify potential issues such as ${criteria} work orders, `,
-    //     },
-    //     {
-    //       role: "user",
-    //       content: `Analyze these work orders and identify any potential issues: ${JSON.stringify(
-    //         workOrders
-    //       )},
-    //       return the response in a json format, with root_cause and suggested_actions`,
-    //     },
-    //   ],
-    // });
-
     return object;
   } catch (error) {
     console.error("Error analyzing work orders:", error);
@@ -70,7 +53,7 @@ export async function identifyRootCause(
           "scheduling",
           "resource_allocation",
           "skill_gap",
-          "high_priority",
+          // "high_priority",
         ]),
         explanation: z.string(),
       }),
@@ -81,7 +64,7 @@ export async function identifyRootCause(
       Workers: ${JSON.stringify(workers)}
       Identified Issue: ${issue}
 
-      Analyze the data and identify the root cause of the issue. Focus on patterns like worker assignments, scheduling, notifying supervisors, resource allocation, skill gaps, high priority work orders .`,
+      Analyze the data and identify the root cause of the issue. Keep it simple and concise, in 2-3 sentences.`,
       temperature: 0.2,
     });
 
@@ -116,7 +99,7 @@ export async function suggestActions(
           "scheduling",
           "resource_allocation",
           "skill_gap",
-          "high_priority",
+          // "high_priority",
         ]),
         suggestedAction: z.enum([
           "assign_worker",
@@ -124,54 +107,31 @@ export async function suggestActions(
           "reallocate_resources",
           "notify_supervisor",
         ]),
-        successMessage: z.string(),
+        // successMessage: z.string(),
         changes: z.array(
           z.object({
             workerId: z.string(),
             workOrderId: z.string(),
-            resource: z.string(),
+            description: z.string(),
           })
         ),
       }),
       system:
-        "You are an AI assistant for a maintenance management system. Your task is to analyze work orders and workers data to identify the root cause of issues.",
+        "You are an AI assistant for a maintenance management system. Given issue and root cause, identify a potential solution to resolve the root cause in given work orders.",
       prompt: ` 
       Work Orders: ${JSON.stringify(workOrders)}
       Workers: ${JSON.stringify(workers)}
       Identified Issue: ${issue}
       Root Cause: ${rootCause}
 
-      Suggest specific actions to resolve the issue. Be specific about which work orders need attention and which workers could be assigned.
-      Also, provide an explanation of changes that need to be made to the system to resolve the issue.
-      And in the successMessage, provide a message that will be shown to the user after the actions are executed.`,
+      If suggested action is to assign a worker, list which work orders will be assigned to which worker.
+      List all the changes that will be made to the system in the changes array, and translate the changes 
+      into a user-friendly message so user is aware of the exact changes that will be made.`,
       temperature: 0.2,
     });
 
     return object;
 
-    // const response = await openai.chat.completions.create({
-    //   model: "gpt-4-turbo",
-    //   messages: [
-    //     {
-    //       role: "system",
-    //       content:
-    //         "You are an AI assistant for a maintenance management system. Your task is to suggest actions to resolve identified issues based on their root causes.",
-    //     },
-    //     {
-    //       role: "user",
-    //       content: `
-    //         Work Orders: ${JSON.stringify(workOrders)}
-    //         Workers: ${JSON.stringify(workers)}
-    //         Identified Issue: ${issue}
-    //         Root Cause: ${rootCause}
-
-    //         Suggest specific actions to resolve the issue. Be specific about which work orders need attention and which workers could be assigned.
-    //       `,
-    //     },
-    //   ],
-    //   temperature: 0.7,
-    //   max_tokens: 500,
-    // });
   } catch (error) {
     console.error("Error suggesting actions:", error);
     return "Error suggesting actions.";

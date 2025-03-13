@@ -1,34 +1,41 @@
 import React, { useState } from "react";
 import Link from "next/link";
+import { WorkerAssignment } from "@/types";
 
 interface AIInsightProps {
   issue: string;
   rootCause?: string;
   suggestedAction?: string;
-  onActionClick?: () => void;
+  loading: boolean;
+  onActionClick: (changes?: WorkerAssignment[]) => void;
   onViewAffectedItems?: () => void;
   affectedItemsCount?: number;
-  loading?: boolean;
   onSkip?: () => void;
-  insightNumber?: number;
-  totalInsights?: number;
+  insightNumber: number;
+  totalInsights: number;
   onWhyClick?: () => void;
-  successMessage?: string;
+  suggestedChanges?: WorkerAssignment[];
+  selectedChanges?: Set<string>;
+  onChangeSelection?: (workOrderId: string) => void;
+  onApplyChanges?: () => void;
 }
 
 const AIInsight: React.FC<AIInsightProps> = ({
   issue,
   rootCause,
   suggestedAction,
+  loading,
   onActionClick,
   onViewAffectedItems,
   affectedItemsCount = 0,
-  loading = false,
   onSkip,
   insightNumber = 1,
   totalInsights = 1,
   onWhyClick,
-  successMessage,
+  suggestedChanges,
+  selectedChanges,
+  onChangeSelection,
+  onApplyChanges,
 }) => {
   // State to track if cause is shown
   const [showCause, setShowCause] = useState(false);
@@ -198,7 +205,6 @@ const AIInsight: React.FC<AIInsightProps> = ({
           )}
         </div>
       </div>
-
       {/* Issue Identification */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
@@ -210,7 +216,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
           </div>
           {!showCause && (
             <button
-              onClick={handleWhyClick}
+              onClick={onWhyClick}
               className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium transition-colors"
             >
               Why?
@@ -233,7 +239,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
       </div>
 
       {/* Root Cause Analysis */}
-      {showCause && rootCause && (
+      {rootCause && (
         <div className="mb-4 animate-fadeIn">
           <div className="flex items-center mb-2">
             <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm mr-2">
@@ -252,7 +258,7 @@ const AIInsight: React.FC<AIInsightProps> = ({
       )}
 
       {/* Suggested Action */}
-      {showAction && suggestedAction && (
+      {suggestedAction && (
         <div className="mb-4 animate-fadeIn">
           <div className="flex items-center mb-2">
             <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm mr-2">
@@ -261,9 +267,50 @@ const AIInsight: React.FC<AIInsightProps> = ({
             <h4 className="font-medium text-gray-800">Suggested Action</h4>
           </div>
           <div className="pl-8">
-            {loading ? (
-              <p className="text-gray-500">Generating recommendations{dots}</p>
-            ) : actionCompleted ? (
+            {suggestedChanges && suggestedChanges.length > 0 ? (
+              <>
+                <p className="text-gray-700 mb-3">
+                  {parseTextWithLinks(suggestedAction)}
+                </p>
+                <div className="space-y-3 mb-4">
+                  {suggestedChanges.map((change) => (
+                    <div
+                      key={change.workOrderId}
+                      className="flex items-start space-x-3 p-2 bg-gray-50 rounded"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedChanges?.has(change.workOrderId)}
+                        onChange={() => onChangeSelection?.(change.workOrderId)}
+                        className="mt-1 h-4 w-4 text-blue-600"
+                      />
+                      <div>
+                        <p className="text-sm text-gray-800">
+                          Work Order: {change.workOrderId}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {change.description ||
+                            `Assign ${change.workerId} to this work order`}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={onApplyChanges}
+                    disabled={!selectedChanges?.size}
+                    className={`px-4 py-2 rounded ${
+                      selectedChanges?.size
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                    }`}
+                  >
+                    Apply Selected Changes
+                  </button>
+                </div>
+              </>
+            ) : (
               <div className="bg-green-100 text-green-800 p-3 rounded-md animate-fadeIn">
                 <div className="flex items-center">
                   <svg
@@ -279,9 +326,9 @@ const AIInsight: React.FC<AIInsightProps> = ({
                   </svg>
                   <p className="font-medium">Action completed successfully!</p>
                 </div>
-                <p className="mt-1 text-sm">
+                {/* <p className="mt-1 text-sm">
                   {parseTextWithLinks(successMessage || "")}
-                </p>
+                </p> */}
                 {onViewAffectedItems && (
                   <button
                     onClick={handleViewAffectedItems}
@@ -299,28 +346,6 @@ const AIInsight: React.FC<AIInsightProps> = ({
                   </button>
                 )}
               </div>
-            ) : (
-              <>
-                <p className="text-gray-700 mb-3">
-                  {parseTextWithLinks(suggestedAction)}
-                </p>
-                <div className="flex space-x-3">
-                  <button
-                    onClick={handleApplyFix}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Apply Fix
-                  </button>
-                  {onViewAffectedItems && (
-                    <button
-                      onClick={handleViewAffectedItems}
-                      className="bg-gray-100 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
-                    >
-                      View Work Orders
-                    </button>
-                  )}
-                </div>
-              </>
             )}
           </div>
         </div>

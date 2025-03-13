@@ -5,35 +5,7 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import WorkOrderTable from "@/components/WorkOrderTable";
 import AIInsight from "@/components/AIInsight";
-
-interface WorkOrder {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
-  status: string;
-  dueDate: string;
-  assignedWorkers: string[];
-  priority: string;
-  createdAt: string;
-}
-
-interface WorkerAssignment {
-  workerId: string;
-  workOrderId: string;
-  resource?: string;
-}
-
-interface Insight {
-  id: number;
-  issue: string;
-  rootCause?: string;
-  suggestedAction?: string;
-  affectedItemsCount?: number;
-  successMessage?: string;
-  filterFunction?: () => void;
-  executeAction?: (changes?: WorkerAssignment[]) => void;
-}
+import { WorkOrder, WorkerAssignment, Insight } from "@/types";
 
 export default function Home() {
   // State for work orders
@@ -172,13 +144,13 @@ export default function Home() {
     try {
       setAiLoading(true);
 
-      // Find overdue work orders at Anaheim Production
-      const overdueAtAnaheim = data.filter(
-        (wo) => wo.status === "Overdue" && wo.location === "Anaheim Production"
+      // Find overdue work orders
+      const overdueWorkOrders = data.filter(
+        (wo) => wo.status === "Overdue" 
       );
 
       // Store their IDs for filtering
-      const overdueIds = overdueAtAnaheim.map((wo) => wo.id);
+      const overdueIds = overdueWorkOrders.map((wo) => wo.id);
       setOverdueWorkOrderIds(overdueIds);
 
       // Find high priority work orders
@@ -187,14 +159,14 @@ export default function Home() {
       setHighPriorityWorkOrderIds(highPriorityIds);
 
       // Find work orders at San Diego Plant with skill gaps
-      const skillGapWOs = data.filter(
-        (wo) =>
-          wo.location === "San Diego Plant" &&
-          wo.status === "In Progress" &&
-          wo.assignedWorkers.length < 2
-      );
-      const skillGapIds = skillGapWOs.map((wo) => wo.id);
-      setSkillGapWorkOrderIds(skillGapIds);
+      // const skillGapWOs = data.filter(
+      //   (wo) =>
+      //     wo.location === "San Diego Plant" &&
+      //     wo.status === "In Progress" &&
+      //     wo.assignedWorkers.length < 2
+      // );
+      // const skillGapIds = skillGapWOs.map((wo) => wo.id);
+      // setSkillGapWorkOrderIds(skillGapIds);
 
       // Create insights
       const allInsights: Insight[] = [
@@ -209,52 +181,52 @@ export default function Home() {
           filterFunction: filterOverdueWorkOrders,
           executeAction: executeOverdueAction,
         },
-        {
-          id: 2,
-          issue: `There are ${highPriorityIds.length} high priority work orders that require immediate attention.`,
-          // rootCause:
-          //   "These work orders are critical for production equipment at San Diego Plant and Los Angeles Facility. Delays could impact production schedules.",
-          // suggestedAction:
-          //   "Would you like me to notify Maria Rodriguez (W002) and David Johnson (W003) about these high priority tasks? They are the supervisors for these locations.",
-          affectedItemsCount: highPriorityIds.length,
-          filterFunction: filterHighPriorityWorkOrders,
-          executeAction: executeHighPriorityAction,
-        },
-        {
-          id: 3,
-          issue: `I've identified ${skillGapIds.length} work orders at San Diego Plant that may require additional skills.`,
-          rootCause:
-            "These work orders involve complex mechanical systems that typically require specialized welding skills. Currently, they only have one worker assigned.",
-          suggestedAction:
-            "Would you like me to assign Sarah Williams (W004) to assist with these work orders? She has the necessary welding certification and will be available tomorrow.",
-          affectedItemsCount: skillGapIds.length,
-          filterFunction: filterSanDiegoWorkOrders,
-          executeAction: executeSkillGapAction,
-        },
-        {
-          id: 4,
-          issue:
-            "Preventive maintenance is due for 3 critical assets at Los Angeles Facility within the next 7 days.",
-          rootCause:
-            "These assets have a maintenance schedule that requires monthly inspection. The last maintenance was performed 23 days ago.",
-          suggestedAction:
-            "Would you like me to schedule preventive maintenance work orders for these assets? I can assign them to David Johnson (W003) who is the supervisor at Los Angeles Facility.",
-          affectedItemsCount: 3,
-          filterFunction: filterLosAngelesWorkOrders,
-          executeAction: executePreventiveMaintenanceAction,
-        },
-        {
-          id: 5,
-          issue:
-            "Inventory levels for 2 critical spare parts are below the minimum threshold.",
-          rootCause:
-            "Recent maintenance activities at Anaheim Production have consumed more parts than anticipated. The current stock is insufficient for upcoming scheduled maintenance.",
-          suggestedAction:
-            "Would you like me to generate purchase orders for these parts? Based on historical usage, I recommend ordering 15 units of each part.",
-          affectedItemsCount: 2,
-          filterFunction: filterOverdueWorkOrders, // Just as a placeholder
-          executeAction: executeInventoryAction,
-        },
+        // {
+        //   id: 2,
+        //   issue: `There are ${highPriorityIds.length} high priority work orders that require immediate attention.`,
+        //   // rootCause:
+        //   //   "These work orders are critical for production equipment at San Diego Plant and Los Angeles Facility. Delays could impact production schedules.",
+        //   // suggestedAction:
+        //   //   "Would you like me to notify Maria Rodriguez (W002) and David Johnson (W003) about these high priority tasks? They are the supervisors for these locations.",
+        //   affectedItemsCount: highPriorityIds.length,
+        //   filterFunction: filterHighPriorityWorkOrders,
+        //   executeAction: executeHighPriorityAction,
+        // },
+        // {
+        //   id: 3,
+        //   issue: `I've identified ${skillGapIds.length} work orders at San Diego Plant that may require additional skills.`,
+        //   rootCause:
+        //     "These work orders involve complex mechanical systems that typically require specialized welding skills. Currently, they only have one worker assigned.",
+        //   suggestedAction:
+        //     "Would you like me to assign Sarah Williams (W004) to assist with these work orders? She has the necessary welding certification and will be available tomorrow.",
+        //   affectedItemsCount: skillGapIds.length,
+        //   filterFunction: filterSanDiegoWorkOrders,
+        //   executeAction: executeSkillGapAction,
+        // },
+        // {
+        //   id: 4,
+        //   issue:
+        //     "Preventive maintenance is due for 3 critical assets at Los Angeles Facility within the next 7 days.",
+        //   rootCause:
+        //     "These assets have a maintenance schedule that requires monthly inspection. The last maintenance was performed 23 days ago.",
+        //   suggestedAction:
+        //     "Would you like me to schedule preventive maintenance work orders for these assets? I can assign them to David Johnson (W003) who is the supervisor at Los Angeles Facility.",
+        //   affectedItemsCount: 3,
+        //   filterFunction: filterLosAngelesWorkOrders,
+        //   executeAction: executePreventiveMaintenanceAction,
+        // },
+        // {
+        //   id: 5,
+        //   issue:
+        //     "Inventory levels for 2 critical spare parts are below the minimum threshold.",
+        //   rootCause:
+        //     "Recent maintenance activities at Anaheim Production have consumed more parts than anticipated. The current stock is insufficient for upcoming scheduled maintenance.",
+        //   suggestedAction:
+        //     "Would you like me to generate purchase orders for these parts? Based on historical usage, I recommend ordering 15 units of each part.",
+        //   affectedItemsCount: 2,
+        //   filterFunction: filterOverdueWorkOrders, // Just as a placeholder
+        //   executeAction: executeInventoryAction,
+        // },
       ];
 
       setInsights(allInsights);
@@ -463,8 +435,6 @@ export default function Home() {
       let issue = "";
       let workOrders: WorkOrder[] = [];
 
-      console.log(currentInsight?.id);
-
       switch (currentInsight.id) {
         case 1: {
           issue = "overdue";
@@ -478,7 +448,6 @@ export default function Home() {
           workOrders = filteredWorkOrders.filter(
             (wo) => wo.priority === "High"
           );
-          console.log("are you here?");
           break;
         }
         case 3: {
@@ -520,44 +489,76 @@ export default function Home() {
       const actionsData = await actions.json();
 
       // Only update if we have valid data
-      if (rootCausesData?.explanation || actionsData?.explanation) {
+      if (rootCausesData?.explanation || actionsData?.changes?.length) {
         const newInsights = insights.map((insight, index) => {
-          if (index === 0) {
+          if (index === currentInsightIndex) {
+            const selectedWorkOrderIds = actionsData?.changes?.map((c: WorkerAssignment) => c.workOrderId) || [];
             return {
               ...insight,
               rootCause: rootCausesData?.explanation || insight.rootCause,
-              suggestedAction:
-                actionsData?.explanation || insight.suggestedAction,
+              suggestedAction: actionsData?.explanation || insight.suggestedAction,
+              suggestedChanges: actionsData?.changes || [],
+              selectedChanges: new Set<string>(selectedWorkOrderIds),
               filterFunction: filterOverdueWorkOrders,
-              executeAction: actionsData?.changes
-                ? () => executeOverdueAction(actionsData.changes)
-                : insight.executeAction,
-              successMessage:
-                actionsData?.successMessage || insight.successMessage,
-            };
+              executeAction: (changes?: WorkerAssignment[]) => executeOverdueAction(changes),
+              // successMessage: actionsData?.successMessage || insight.successMessage,
+            } as Insight;
           }
           return insight;
         });
 
-        // Only update state if something actually changed
-        const currentInsight = insights[0] || {};
-        const newInsight = newInsights[0] || {};
-
-        const hasChanged =
-          currentInsight.rootCause !== newInsight.rootCause ||
-          currentInsight.suggestedAction !== newInsight.suggestedAction ||
-          currentInsight.successMessage !== newInsight.successMessage;
-
-        if (hasChanged) {
-          console.log("Updating insights with new data");
-          setInsights(newInsights);
-        }
+        setInsights(newInsights);
       }
     } catch (error) {
       console.error("Error fetching root cause and actions:", error);
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const handleChangeSelection = (workOrderId: string) => {
+    const newInsights = insights.map((insight, index) => {
+      if (index === currentInsightIndex) {
+        const newSelected = new Set<string>(insight.selectedChanges || new Set());
+        if (newSelected.has(workOrderId)) {
+          newSelected.delete(workOrderId);
+        } else {
+          newSelected.add(workOrderId);
+        }
+        return {
+          ...insight,
+          selectedChanges: newSelected
+        } as Insight;
+      }
+      return insight;
+    });
+    setInsights(newInsights);
+  };
+
+  const applySelectedChanges = async () => {
+    const currentInsight = insights[currentInsightIndex];
+    if (!currentInsight?.suggestedChanges || !currentInsight?.selectedChanges) return;
+
+    const changesToApply = currentInsight.suggestedChanges.filter(change => 
+      currentInsight.selectedChanges?.has(change.workOrderId)
+    );
+    
+    if (changesToApply.length > 0) {
+      await executeOverdueAction(changesToApply);
+    }
+    
+    // Clear the changes from the insight after applying
+    const newInsights = insights.map((insight, index) => {
+      if (index === currentInsightIndex) {
+        return {
+          ...insight,
+          suggestedChanges: undefined,
+          selectedChanges: undefined
+        };
+      }
+      return insight;
+    });
+    setInsights(newInsights);
   };
 
   return (
@@ -591,7 +592,11 @@ export default function Home() {
                 insightNumber={currentInsightIndex + 1}
                 totalInsights={insights.length}
                 onWhyClick={fetchRootCauseAndAction}
-                successMessage={currentInsight.successMessage}
+                // successMessage={currentInsight.successMessage}
+                suggestedChanges={currentInsight.suggestedChanges}
+                selectedChanges={currentInsight.selectedChanges}
+                onChangeSelection={handleChangeSelection}
+                onApplyChanges={applySelectedChanges}
               />
             )}
           </div>
